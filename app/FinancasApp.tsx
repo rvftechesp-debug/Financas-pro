@@ -10,8 +10,7 @@ import {
   TrendingUp, TrendingDown, Target, BarChart3, PieChart as PieIcon,
   Receipt, CalendarDays, ChevronRight, AlertTriangle, CheckCircle2,
   PiggyBank, LogIn, UserPlus, LogOut, Eye, EyeOff, Lock, User, Mail,
-  PlusCircle, DollarSign, Settings, KeyRound, ShieldCheck, TrendingUpIcon, Zap, Loader,
-  FileText, Printer
+  PlusCircle, DollarSign, Settings, KeyRound, ShieldCheck, TrendingUpIcon, Zap, Loader
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -711,6 +710,15 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
   const [tempBudget, setTempBudget] = useState<number>(0);
   const [modalAberto, setModalAberto] = useState(false);
   const [valorReceita, setValorReceita] = useState("");
+  const [gastoTab, setGastoTab] = useState<"normal" | "cartao">("normal");
+  const [cardForm, setCardForm] = useState({
+    description: "",
+    amount: "",
+    category: "Alimentação",
+    date: "",
+    cardName: "",
+    installments: "1",
+  });
   const [descReceita, setDescReceita] = useState("");
   const [catReceita, setCatReceita] = useState("salario");
   const [dataReceita, setDataReceita] = useState(() => new Date().toISOString().split("T")[0]);
@@ -734,10 +742,6 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
   // Profile menu
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
-  const [showExtrato, setShowExtrato] = useState(false);
-  const [extratoFiltroCategoria, setExtratoFiltroCategoria] = useState("todas");
-  const [extratoFiltroTipo, setExtratoFiltroTipo] = useState<"ambos" | "gastos" | "receitas">("ambos");
-  const [extratoMes, setExtratoMes] = useState(selectedMonth);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -954,11 +958,11 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
               Adicionar Gasto
             </button>
             <button
-              onClick={() => { setExtratoMes(selectedMonth); setShowExtrato(true); }}
-              className="bg-white/5 border border-white/10 text-[#ccc] hover:text-white hover:bg-white/10 px-3 py-2 rounded-lg transition-colors cursor-pointer flex items-center gap-2"
+              className="bg-white/5 border border-white/10 text-[#888] hover:text-red-400 hover:bg-white/10 px-3 py-2 rounded-lg transition-colors cursor-pointer flex items-center gap-2"
+              onClick={onLogout}
             >
-              <FileText className="w-4 h-4" />
-              <span>Extrato</span>
+              <LogOut className="w-4 h-4" />
+              <span>Sair</span>
             </button>
             <button
               onClick={() => setModalAberto(true)}
@@ -998,11 +1002,11 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="w-full max-w-[480px]">
               <Card className="bg-white/[0.03] border-white/[0.07] overflow-hidden">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
+                <CardHeader className="pb-0">
+                  <div className="flex items-center justify-between mb-3">
                     <CardTitle className="text-[15px] font-bold text-white flex items-center gap-2">
                       <Plus className="w-4 h-4 text-orange-500" />
-                      Novo Gasto
+                      Novo Lançamento
                     </CardTitle>
                     <button
                       onClick={() => setShowForm(false)}
@@ -1011,46 +1015,160 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                    <input
-                      className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-orange-500 w-full placeholder:text-[#666] transition-colors"
-                      placeholder="Descrição do gasto"
-                      value={form.description}
-                      onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                    />
-                    <input
-                      className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-orange-500 w-full placeholder:text-[#666] transition-colors"
-                      type="number"
-                      placeholder="Valor (R$)"
-                      value={form.amount}
-                      onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-                    />
-                    <select
-                      className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-orange-500 w-full cursor-pointer transition-colors"
-                      value={form.category}
-                      onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                  {/* Tabs */}
+                  <div className="flex border-b border-white/[0.07]">
+                    <button
+                      onClick={() => setGastoTab("normal")}
+                      className={`flex-1 py-2.5 text-sm font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                        gastoTab === "normal"
+                          ? "text-white border-b-2 border-orange-500"
+                          : "text-[#888] hover:text-[#ccc]"
+                      }`}
                     >
-                      {CATEGORIES.map(c => (
-                        <option key={c.name} value={c.name} className="bg-[#1a1a2e]">
-                          {c.icon} {c.name}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-orange-500 w-full transition-colors"
-                      type="date"
-                      value={form.date}
-                      onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-                    />
+                      <Receipt className="w-3.5 h-3.5" /> Gasto
+                    </button>
+                    <button
+                      onClick={() => setGastoTab("cartao")}
+                      className={`flex-1 py-2.5 text-sm font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                        gastoTab === "cartao"
+                          ? "text-white border-b-2 border-purple-500"
+                          : "text-[#888] hover:text-[#ccc]"
+                      }`}
+                    >
+                      <DollarSign className="w-3.5 h-3.5" /> Cartão de Crédito
+                    </button>
                   </div>
-                  <button
-                    className="bg-gradient-to-br from-orange-500 to-pink-500 text-white font-bold rounded-xl px-5 py-2.5 text-sm hover:opacity-85 transition-opacity w-full cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
-                    onClick={handleAddExpense}
-                  >
-                    <Check className="w-4 h-4" /> Salvar Gasto
-                  </button>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  {gastoTab === "normal" ? (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                        <input
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-orange-500 w-full placeholder:text-[#666] transition-colors"
+                          placeholder="Descrição do gasto"
+                          value={form.description}
+                          onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                        />
+                        <input
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-orange-500 w-full placeholder:text-[#666] transition-colors"
+                          type="number"
+                          placeholder="Valor (R$)"
+                          value={form.amount}
+                          onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+                        />
+                        <select
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-orange-500 w-full cursor-pointer transition-colors"
+                          value={form.category}
+                          onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                        >
+                          {CATEGORIES.map(c => (
+                            <option key={c.name} value={c.name} className="bg-[#1a1a2e]">
+                              {c.icon} {c.name}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-orange-500 w-full transition-colors"
+                          type="date"
+                          value={form.date}
+                          onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                        />
+                      </div>
+                      <button
+                        className="bg-gradient-to-br from-orange-500 to-pink-500 text-white font-bold rounded-xl px-5 py-2.5 text-sm hover:opacity-85 transition-opacity w-full cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
+                        onClick={handleAddExpense}
+                      >
+                        <Check className="w-4 h-4" /> Salvar Gasto
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                        <input
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-purple-500 w-full placeholder:text-[#666] transition-colors"
+                          placeholder="Descrição (ex: Compra Mercado)"
+                          value={cardForm.description}
+                          onChange={e => setCardForm(f => ({ ...f, description: e.target.value }))}
+                        />
+                        <input
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-purple-500 w-full placeholder:text-[#666] transition-colors"
+                          type="number"
+                          placeholder="Valor total (R$)"
+                          value={cardForm.amount}
+                          onChange={e => setCardForm(f => ({ ...f, amount: e.target.value }))}
+                        />
+                        <input
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-purple-500 w-full placeholder:text-[#666] transition-colors"
+                          placeholder="Nome do cartão (ex: Nubank)"
+                          value={cardForm.cardName}
+                          onChange={e => setCardForm(f => ({ ...f, cardName: e.target.value }))}
+                        />
+                        <select
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-purple-500 w-full cursor-pointer transition-colors"
+                          value={cardForm.installments}
+                          onChange={e => setCardForm(f => ({ ...f, installments: e.target.value }))}
+                        >
+                          {Array.from({ length: 24 }, (_, i) => i + 1).map(n => (
+                            <option key={n} value={String(n)} className="bg-[#1a1a2e]">
+                              {n === 1 ? "À vista (1x)" : `${n}x de ${cardForm.amount ? `R$ ${(parseFloat(cardForm.amount) / n).toFixed(2).replace(".", ",")}` : "—"}`}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-purple-500 w-full cursor-pointer transition-colors"
+                          value={cardForm.category}
+                          onChange={e => setCardForm(f => ({ ...f, category: e.target.value }))}
+                        >
+                          {CATEGORIES.map(c => (
+                            <option key={c.name} value={c.name} className="bg-[#1a1a2e]">
+                              {c.icon} {c.name}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-purple-500 w-full transition-colors"
+                          type="date"
+                          value={cardForm.date}
+                          onChange={e => setCardForm(f => ({ ...f, date: e.target.value }))}
+                        />
+                      </div>
+                      {cardForm.amount && parseFloat(cardForm.amount) > 0 && parseInt(cardForm.installments) > 1 && (
+                        <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl px-4 py-2.5 mb-3 text-xs text-purple-300">
+                          💳 {parseInt(cardForm.installments)}x de{" "}
+                          <strong>R$ {(parseFloat(cardForm.amount) / parseInt(cardForm.installments)).toFixed(2).replace(".", ",")}</strong>
+                          {" "}— Total: <strong>R$ {parseFloat(cardForm.amount).toFixed(2).replace(".", ",")}</strong>
+                          {cardForm.cardName && ` — ${cardForm.cardName}`}
+                        </div>
+                      )}
+                      <button
+                        className="bg-gradient-to-br from-purple-600 to-pink-500 text-white font-bold rounded-xl px-5 py-2.5 text-sm hover:opacity-85 transition-opacity w-full cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20"
+                        onClick={() => {
+                          if (!cardForm.description || !cardForm.amount || !cardForm.date) return;
+                          const total = parseFloat(cardForm.amount);
+                          const n = parseInt(cardForm.installments);
+                          const installmentValue = total / n;
+                          for (let i = 0; i < n; i++) {
+                            const d = new Date(cardForm.date + "T00:00:00");
+                            d.setMonth(d.getMonth() + i);
+                            const dateStr = d.toISOString().split("T")[0];
+                            const desc = n > 1
+                              ? `${cardForm.description}${cardForm.cardName ? ` (${cardForm.cardName})` : ""} ${i + 1}/${n}`
+                              : `${cardForm.description}${cardForm.cardName ? ` (${cardForm.cardName})` : ""}`;
+                            finance.addExpense({
+                              description: desc,
+                              category: cardForm.category,
+                              amount: String(installmentValue.toFixed(2)),
+                              date: dateStr,
+                            });
+                          }
+                          setCardForm({ description: "", amount: "", category: "Alimentação", date: "", cardName: "", installments: "1" });
+                          setShowForm(false);
+                        }}
+                      >
+                        <Check className="w-4 h-4" /> Salvar {parseInt(cardForm.installments) > 1 ? `${cardForm.installments} parcelas` : "Compra"}
+                      </button>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -2189,151 +2307,6 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
           </div>
         </div>
       )}
-
-      {/* Modal Extrato */}
-      {showExtrato && (() => {
-        const expenseItems = finance.expenses
-          .filter(e => new Date(e.date + "T00:00:00").getMonth() === extratoMes)
-          .filter(e => extratoFiltroCategoria === "todas" || e.category === extratoFiltroCategoria)
-          .filter(() => extratoFiltroTipo === "ambos" || extratoFiltroTipo === "gastos");
-        const incomeItems = finance.incomeEntries
-          .filter(e => new Date(e.date + "T00:00:00").getMonth() === extratoMes)
-          .filter(() => extratoFiltroTipo === "ambos" || extratoFiltroTipo === "receitas");
-        const allItems = [
-          ...expenseItems.map(e => ({ ...e, _tipo: "Gasto" as const })),
-          ...incomeItems.map(e => ({ ...e, _tipo: "Receita" as const, category: e.type })),
-        ].sort((a, b) => +new Date(b.date) - +new Date(a.date));
-        const totalGastos = expenseItems.reduce((s, e) => s + e.amount, 0);
-        const totalReceitas = incomeItems.reduce((s, e) => s + e.amount, 0);
-        const saldo = totalReceitas - totalGastos;
-        return (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="w-full max-w-[640px] max-h-[90vh] flex flex-col">
-              <Card className="bg-[#0b0b14] border-white/[0.07] overflow-hidden flex flex-col max-h-[90vh]">
-                {/* Header */}
-                <CardHeader className="pb-2 flex-shrink-0">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-[15px] font-bold text-white flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-orange-500" />
-                      Extrato
-                    </CardTitle>
-                    <button onClick={() => setShowExtrato(false)} className="text-[#888] hover:text-white transition-colors cursor-pointer">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  {/* Filtros */}
-                  <div className="grid grid-cols-3 gap-2 mt-3">
-                    <select
-                      value={extratoMes}
-                      onChange={e => setExtratoMes(parseInt(e.target.value))}
-                      className="bg-white/5 border border-white/10 rounded-lg text-[#f0f0f0] px-2.5 py-2 text-xs outline-none focus:border-orange-500 cursor-pointer"
-                    >
-                      {MONTHS.map((m, i) => (
-                        <option key={m} value={i} className="bg-[#0b0b14]">{m}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={extratoFiltroCategoria}
-                      onChange={e => setExtratoFiltroCategoria(e.target.value)}
-                      className="bg-white/5 border border-white/10 rounded-lg text-[#f0f0f0] px-2.5 py-2 text-xs outline-none focus:border-orange-500 cursor-pointer"
-                    >
-                      <option value="todas" className="bg-[#0b0b14]">Todas categorias</option>
-                      {CATEGORIES.map(c => (
-                        <option key={c.name} value={c.name} className="bg-[#0b0b14]">{c.icon} {c.name}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={extratoFiltroTipo}
-                      onChange={e => setExtratoFiltroTipo(e.target.value as "ambos" | "gastos" | "receitas")}
-                      className="bg-white/5 border border-white/10 rounded-lg text-[#f0f0f0] px-2.5 py-2 text-xs outline-none focus:border-orange-500 cursor-pointer"
-                    >
-                      <option value="ambos" className="bg-[#0b0b14]">Gastos e Receitas</option>
-                      <option value="gastos" className="bg-[#0b0b14]">Só Gastos</option>
-                      <option value="receitas" className="bg-[#0b0b14]">Só Receitas</option>
-                    </select>
-                  </div>
-                </CardHeader>
-
-                {/* Lista scrollável */}
-                <CardContent className="overflow-y-auto flex-1 px-4 py-2">
-                  {/* Cabeçalho de impressão (visível só ao imprimir) */}
-                  <div className="hidden print:block mb-6 border-b border-gray-300 pb-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/icon.svg" alt="Logo" className="w-10 h-10" />
-                      <div>
-                        <h1 className="text-xl font-extrabold text-gray-900">FinançasPRO — Extrato Mensal</h1>
-                        <p className="text-sm text-gray-600">Olá, {user.name}! &nbsp;·&nbsp; Período: {MONTHS[extratoMes]}/2026</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {allItems.length === 0 ? (
-                    <p className="text-[#666] text-sm text-center py-6">Nenhum lançamento encontrado.</p>
-                  ) : (
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="text-[#888] text-xs border-b border-white/[0.05] print:text-gray-500">
-                          <th className="text-left py-2 font-medium">Data</th>
-                          <th className="text-left py-2 font-medium">Descrição</th>
-                          <th className="text-left py-2 font-medium hidden sm:table-cell">Categoria</th>
-                          <th className="text-left py-2 font-medium">Tipo</th>
-                          <th className="text-right py-2 font-medium">Valor</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {allItems.map((item, idx) => (
-                          <tr key={idx} className="border-b border-white/[0.03] print:border-gray-200">
-                            <td className="py-2.5 text-[#888] whitespace-nowrap text-xs">
-                              {new Date(item.date + "T00:00:00").toLocaleDateString("pt-BR")}
-                            </td>
-                            <td className="py-2.5 text-[#f0f0f0] print:text-gray-900 pr-2">{item.description}</td>
-                            <td className="py-2.5 text-[#888] hidden sm:table-cell text-xs">{item.category}</td>
-                            <td className="py-2.5 text-xs">
-                              <span className={`px-2 py-0.5 rounded-full font-semibold ${item._tipo === "Receita" ? "bg-emerald-500/20 text-emerald-400" : "bg-orange-500/20 text-orange-400"}`}>
-                                {item._tipo}
-                              </span>
-                            </td>
-                            <td className={`py-2.5 text-right font-bold whitespace-nowrap ${item._tipo === "Receita" ? "text-emerald-400" : "text-[#f0f0f0]"}`}>
-                              {item._tipo === "Receita" ? "+" : ""}{formatBRL(item.amount)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-
-                  {/* Resumo */}
-                  <div className="mt-4 pt-3 border-t border-white/[0.07] print:border-gray-300 grid grid-cols-3 gap-2 text-center">
-                    <div>
-                      <p className="text-[#888] text-xs mb-0.5">Total Gastos</p>
-                      <p className="text-orange-400 font-bold text-sm">{formatBRL(totalGastos)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[#888] text-xs mb-0.5">Total Receitas</p>
-                      <p className="text-emerald-400 font-bold text-sm">{formatBRL(totalReceitas)}</p>
-                    </div>
-                    <div>
-                      <p className="text-[#888] text-xs mb-0.5">Saldo</p>
-                      <p className={`font-bold text-sm ${saldo >= 0 ? "text-emerald-400" : "text-red-400"}`}>{formatBRL(saldo)}</p>
-                    </div>
-                  </div>
-                </CardContent>
-
-                {/* Botão imprimir */}
-                <div className="px-4 pb-4 flex-shrink-0">
-                  <button
-                    onClick={() => window.print()}
-                    className="w-full bg-gradient-to-br from-orange-500 to-pink-500 text-white font-bold rounded-xl px-5 py-2.5 text-sm hover:opacity-85 transition-opacity flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-orange-500/20"
-                  >
-                    <Printer className="w-4 h-4" /> Imprimir / Salvar PDF
-                  </button>
-                </div>
-              </Card>
-            </div>
-          </div>
-        );
-      })()}
 
     </div>/* end min-h-screen */
   );
