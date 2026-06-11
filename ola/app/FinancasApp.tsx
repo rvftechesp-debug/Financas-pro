@@ -710,6 +710,15 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
   const [tempBudget, setTempBudget] = useState<number>(0);
   const [modalAberto, setModalAberto] = useState(false);
   const [valorReceita, setValorReceita] = useState("");
+  const [gastoTab, setGastoTab] = useState<"normal" | "cartao">("normal");
+  const [cardForm, setCardForm] = useState({
+    description: "",
+    amount: "",
+    category: "Alimentação",
+    date: "",
+    cardName: "",
+    installments: "1",
+  });
   const [descReceita, setDescReceita] = useState("");
   const [catReceita, setCatReceita] = useState("salario");
   const [dataReceita, setDataReceita] = useState(() => new Date().toISOString().split("T")[0]);
@@ -993,11 +1002,11 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="w-full max-w-[480px]">
               <Card className="bg-white/[0.03] border-white/[0.07] overflow-hidden">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
+                <CardHeader className="pb-0">
+                  <div className="flex items-center justify-between mb-3">
                     <CardTitle className="text-[15px] font-bold text-white flex items-center gap-2">
                       <Plus className="w-4 h-4 text-orange-500" />
-                      Novo Gasto
+                      Novo Lançamento
                     </CardTitle>
                     <button
                       onClick={() => setShowForm(false)}
@@ -1006,46 +1015,160 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-                    <input
-                      className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-orange-500 w-full placeholder:text-[#666] transition-colors"
-                      placeholder="Descrição do gasto"
-                      value={form.description}
-                      onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                    />
-                    <input
-                      className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-orange-500 w-full placeholder:text-[#666] transition-colors"
-                      type="number"
-                      placeholder="Valor (R$)"
-                      value={form.amount}
-                      onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-                    />
-                    <select
-                      className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-orange-500 w-full cursor-pointer transition-colors"
-                      value={form.category}
-                      onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                  {/* Tabs */}
+                  <div className="flex border-b border-white/[0.07]">
+                    <button
+                      onClick={() => setGastoTab("normal")}
+                      className={`flex-1 py-2.5 text-sm font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                        gastoTab === "normal"
+                          ? "text-white border-b-2 border-orange-500"
+                          : "text-[#888] hover:text-[#ccc]"
+                      }`}
                     >
-                      {CATEGORIES.map(c => (
-                        <option key={c.name} value={c.name} className="bg-[#1a1a2e]">
-                          {c.icon} {c.name}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-orange-500 w-full transition-colors"
-                      type="date"
-                      value={form.date}
-                      onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-                    />
+                      <Receipt className="w-3.5 h-3.5" /> Gasto
+                    </button>
+                    <button
+                      onClick={() => setGastoTab("cartao")}
+                      className={`flex-1 py-2.5 text-sm font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                        gastoTab === "cartao"
+                          ? "text-white border-b-2 border-purple-500"
+                          : "text-[#888] hover:text-[#ccc]"
+                      }`}
+                    >
+                      <DollarSign className="w-3.5 h-3.5" /> Cartão de Crédito
+                    </button>
                   </div>
-                  <button
-                    className="bg-gradient-to-br from-orange-500 to-pink-500 text-white font-bold rounded-xl px-5 py-2.5 text-sm hover:opacity-85 transition-opacity w-full cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
-                    onClick={handleAddExpense}
-                  >
-                    <Check className="w-4 h-4" /> Salvar Gasto
-                  </button>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  {gastoTab === "normal" ? (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                        <input
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-orange-500 w-full placeholder:text-[#666] transition-colors"
+                          placeholder="Descrição do gasto"
+                          value={form.description}
+                          onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                        />
+                        <input
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-orange-500 w-full placeholder:text-[#666] transition-colors"
+                          type="number"
+                          placeholder="Valor (R$)"
+                          value={form.amount}
+                          onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+                        />
+                        <select
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-orange-500 w-full cursor-pointer transition-colors"
+                          value={form.category}
+                          onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                        >
+                          {CATEGORIES.map(c => (
+                            <option key={c.name} value={c.name} className="bg-[#1a1a2e]">
+                              {c.icon} {c.name}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-orange-500 w-full transition-colors"
+                          type="date"
+                          value={form.date}
+                          onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                        />
+                      </div>
+                      <button
+                        className="bg-gradient-to-br from-orange-500 to-pink-500 text-white font-bold rounded-xl px-5 py-2.5 text-sm hover:opacity-85 transition-opacity w-full cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-orange-500/20"
+                        onClick={handleAddExpense}
+                      >
+                        <Check className="w-4 h-4" /> Salvar Gasto
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                        <input
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-purple-500 w-full placeholder:text-[#666] transition-colors"
+                          placeholder="Descrição (ex: Compra Mercado)"
+                          value={cardForm.description}
+                          onChange={e => setCardForm(f => ({ ...f, description: e.target.value }))}
+                        />
+                        <input
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-purple-500 w-full placeholder:text-[#666] transition-colors"
+                          type="number"
+                          placeholder="Valor total (R$)"
+                          value={cardForm.amount}
+                          onChange={e => setCardForm(f => ({ ...f, amount: e.target.value }))}
+                        />
+                        <input
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-purple-500 w-full placeholder:text-[#666] transition-colors"
+                          placeholder="Nome do cartão (ex: Nubank)"
+                          value={cardForm.cardName}
+                          onChange={e => setCardForm(f => ({ ...f, cardName: e.target.value }))}
+                        />
+                        <select
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-purple-500 w-full cursor-pointer transition-colors"
+                          value={cardForm.installments}
+                          onChange={e => setCardForm(f => ({ ...f, installments: e.target.value }))}
+                        >
+                          {Array.from({ length: 24 }, (_, i) => i + 1).map(n => (
+                            <option key={n} value={String(n)} className="bg-[#1a1a2e]">
+                              {n === 1 ? "À vista (1x)" : `${n}x de ${cardForm.amount ? `R$ ${(parseFloat(cardForm.amount) / n).toFixed(2).replace(".", ",")}` : "—"}`}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-purple-500 w-full cursor-pointer transition-colors"
+                          value={cardForm.category}
+                          onChange={e => setCardForm(f => ({ ...f, category: e.target.value }))}
+                        >
+                          {CATEGORIES.map(c => (
+                            <option key={c.name} value={c.name} className="bg-[#1a1a2e]">
+                              {c.icon} {c.name}
+                            </option>
+                          ))}
+                        </select>
+                        <input
+                          className="bg-white/5 border border-white/10 rounded-xl text-[#f0f0f0] px-3.5 py-2.5 text-sm outline-none focus:border-purple-500 w-full transition-colors"
+                          type="date"
+                          value={cardForm.date}
+                          onChange={e => setCardForm(f => ({ ...f, date: e.target.value }))}
+                        />
+                      </div>
+                      {cardForm.amount && parseFloat(cardForm.amount) > 0 && parseInt(cardForm.installments) > 1 && (
+                        <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl px-4 py-2.5 mb-3 text-xs text-purple-300">
+                          💳 {parseInt(cardForm.installments)}x de{" "}
+                          <strong>R$ {(parseFloat(cardForm.amount) / parseInt(cardForm.installments)).toFixed(2).replace(".", ",")}</strong>
+                          {" "}— Total: <strong>R$ {parseFloat(cardForm.amount).toFixed(2).replace(".", ",")}</strong>
+                          {cardForm.cardName && ` — ${cardForm.cardName}`}
+                        </div>
+                      )}
+                      <button
+                        className="bg-gradient-to-br from-purple-600 to-pink-500 text-white font-bold rounded-xl px-5 py-2.5 text-sm hover:opacity-85 transition-opacity w-full cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-purple-500/20"
+                        onClick={() => {
+                          if (!cardForm.description || !cardForm.amount || !cardForm.date) return;
+                          const total = parseFloat(cardForm.amount);
+                          const n = parseInt(cardForm.installments);
+                          const installmentValue = total / n;
+                          for (let i = 0; i < n; i++) {
+                            const d = new Date(cardForm.date + "T00:00:00");
+                            d.setMonth(d.getMonth() + i);
+                            const dateStr = d.toISOString().split("T")[0];
+                            const desc = n > 1
+                              ? `${cardForm.description}${cardForm.cardName ? ` (${cardForm.cardName})` : ""} ${i + 1}/${n}`
+                              : `${cardForm.description}${cardForm.cardName ? ` (${cardForm.cardName})` : ""}`;
+                            finance.addExpense({
+                              description: desc,
+                              category: cardForm.category,
+                              amount: String(installmentValue.toFixed(2)),
+                              date: dateStr,
+                            });
+                          }
+                          setCardForm({ description: "", amount: "", category: "Alimentação", date: "", cardName: "", installments: "1" });
+                          setShowForm(false);
+                        }}
+                      >
+                        <Check className="w-4 h-4" /> Salvar {parseInt(cardForm.installments) > 1 ? `${cardForm.installments} parcelas` : "Compra"}
+                      </button>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>
