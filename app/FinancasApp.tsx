@@ -150,11 +150,12 @@ function AuthScreen({ onLogin }: { onLogin: (user: User) => void }) {
       <div className="w-full max-w-[420px]">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-pink-500 mb-4 shadow-xl shadow-orange-500/20">
-            <Wallet className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="RV Finança" className="w-20 h-20 object-contain" />
           </div>
           <h1 className="text-3xl font-extrabold m-0 bg-gradient-to-br from-orange-500 to-pink-500 bg-clip-text text-transparent">
-            FinançasPRO
+            RV Finança
           </h1>
           <p className="text-[#888] text-sm mt-2">Controle suas finanças de forma inteligente</p>
         </div>
@@ -919,9 +920,10 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
               )}
             </div>
             <div>
-              <h1 className="text-2xl sm:text-[28px] font-extrabold m-0 bg-gradient-to-br from-orange-500 to-pink-500 bg-clip-text text-transparent flex items-center gap-2">
-                <Wallet className="w-7 h-7 sm:w-8 sm:h-8 text-orange-500" />
-                FinançasPRO
+              <h1 className="text-2xl sm:text-[28px] font-extrabold m-0 flex items-center gap-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo.png" alt="RV Finança" className="w-9 h-9 sm:w-10 sm:h-10 object-contain" />
+                <span className="bg-gradient-to-br from-orange-500 to-pink-500 bg-clip-text text-transparent">RV Finança</span>
               </h1>
               <div className="flex items-center gap-2 mt-1 relative" ref={profileMenuRef}>
                 <p className="text-[#888] text-[13px] m-0">Olá, <span className="text-orange-500 font-semibold">{user.name}</span>!</p>
@@ -2379,9 +2381,9 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
                   <div className="hidden print:block mb-6 border-b border-gray-300 pb-4">
                     <div className="flex items-center gap-3 mb-2">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/icon.svg" alt="Logo" className="w-10 h-10" />
+                      <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
                       <div>
-                        <h1 className="text-xl font-extrabold text-gray-900">FinançasPRO — Extrato Mensal</h1>
+                        <h1 className="text-xl font-extrabold text-gray-900">RV Finança — Extrato Mensal</h1>
                         <p className="text-sm text-gray-600">Olá, {user.name}! &nbsp;·&nbsp; Período: {MONTHS[extratoMes]}/2026</p>
                       </div>
                     </div>
