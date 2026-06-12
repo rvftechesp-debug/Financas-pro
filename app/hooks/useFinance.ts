@@ -6,11 +6,11 @@ import type { Expense, Budget } from "@/app/types";
 
 export const CATEGORIES = [
   { name: "Alimentação", icon: "🍽️", color: "#F97316" },
-  { name: "Transporte", icon: "🚗", color: "#3B82F6" },
-  { name: "Lazer", icon: "🎮", color: "#A855F7" },
-  { name: "Moradia", icon: "🏠", color: "#10B981" },
-  { name: "Assinaturas", icon: "📱", color: "#EC4899" },
-  { name: "Outros", icon: "💡", color: "#EAB308" },
+  { name: "Transporte",  icon: "🚗",  color: "#3B82F6" },
+  { name: "Lazer",       icon: "🎮",  color: "#A855F7" },
+  { name: "Moradia",     icon: "🏠",  color: "#10B981" },
+  { name: "Assinaturas", icon: "📱",  color: "#EC4899" },
+  { name: "Outros",      icon: "💡",  color: "#EAB308" },
 ];
 
 export const MONTHS = [
@@ -33,27 +33,6 @@ const defaultBudgets: Budget[] = CATEGORIES.map(c => ({
   limit: 500,
 }));
 
-const initialExpenses: Expense[] = [
-  { id: 1,  description: "Supermercado",      category: "Alimentação", amount: 450,  date: "2026-05-03" },
-  { id: 2,  description: "Uber",              category: "Transporte",  amount: 80,   date: "2026-05-05" },
-  { id: 3,  description: "Netflix + Spotify", category: "Assinaturas", amount: 65,   date: "2026-05-01" },
-  { id: 4,  description: "Aluguel",           category: "Moradia",     amount: 1500, date: "2026-05-01" },
-  { id: 5,  description: "Cinema",            category: "Lazer",       amount: 120,  date: "2026-05-10" },
-  { id: 6,  description: "Farmácia",          category: "Outros",      amount: 90,   date: "2026-05-12" },
-  { id: 7,  description: "iFood",             category: "Alimentação", amount: 200,  date: "2026-05-15" },
-  { id: 8,  description: "Combustível",       category: "Transporte",  amount: 150,  date: "2026-05-18" },
-  { id: 9,  description: "Supermercado",      category: "Alimentação", amount: 520,  date: "2026-06-02" },
-  { id: 10, description: "Aluguel",           category: "Moradia",     amount: 1500, date: "2026-06-01" },
-  { id: 11, description: "Uber",              category: "Transporte",  amount: 95,   date: "2026-06-05" },
-  { id: 12, description: "Cinema",            category: "Lazer",       amount: 80,   date: "2026-06-08" },
-  { id: 13, description: "Netflix + Spotify", category: "Assinaturas", amount: 65,   date: "2026-06-01" },
-  { id: 14, description: "Supermercado",      category: "Alimentação", amount: 380,  date: "2026-04-03" },
-  { id: 15, description: "Aluguel",           category: "Moradia",     amount: 1500, date: "2026-04-01" },
-  { id: 16, description: "Uber",              category: "Transporte",  amount: 120,  date: "2026-04-05" },
-  { id: 17, description: "Farmácia",          category: "Outros",      amount: 150,  date: "2026-04-12" },
-  { id: 18, description: "Restaurante",       category: "Alimentação", amount: 180,  date: "2026-04-20" },
-];
-
 // ─── hook ────────────────────────────────────────────────────────────────────
 
 export function useFinance(selectedMonth?: number) {
@@ -70,20 +49,21 @@ export function useFinance(selectedMonth?: number) {
   })();
 
   const expensesKey = `financas-expenses-${userId}`;
-  const incomeKey   = `financas-income-${userId}`;
   const budgetsKey  = `financas-budgets-${userId}`;
   const incomesKey  = `financas-incomes-${userId}`;
 
-  const [expenses,     setExpenses]     = useLocalStorage<Expense[]>(expensesKey, initialExpenses);
-  const [income,       setIncome]       = useLocalStorage<number>(incomeKey, 4500);
-  const [budgets,      setBudgets]      = useLocalStorage<Budget[]>(budgetsKey, defaultBudgets);
-  const [incomeEntries, setIncomeEntries] = useLocalStorage<IncomeEntry[]>(incomesKey, []);
+  // ✅ FIX 1: removido initialExpenses hardcoded — array vazio para novos usuários
+  // ✅ FIX 2: removida chave income separada — income calculado dinamicamente
+  const [expenses,       setExpenses]       = useLocalStorage<Expense[]>(expensesKey, []);
+  const [budgets,        setBudgets]        = useLocalStorage<Budget[]>(budgetsKey, defaultBudgets);
+  const [incomeEntries,  setIncomeEntries]  = useLocalStorage<IncomeEntry[]>(incomesKey, []);
 
   const month = selectedMonth ?? new Date().getMonth();
 
-  const filtered = useMemo(() =>
-    expenses.filter(e => new Date(e.date + "T00:00:00").getMonth() === month),
-    [expenses, month]
+  // ✅ FIX 3: income = soma real de TODAS as receitas cadastradas
+  const income = useMemo(() =>
+    incomeEntries.reduce((s, e) => s + e.amount, 0),
+    [incomeEntries]
   );
 
   // Receitas do mês selecionado
@@ -92,13 +72,25 @@ export function useFinance(selectedMonth?: number) {
     [incomeEntries, month]
   );
 
+  // Renda apenas do mês selecionado
+  const monthlyIncome = useMemo(() =>
+    filteredIncomes.reduce((s, e) => s + e.amount, 0),
+    [filteredIncomes]
+  );
+
+  const filtered = useMemo(() =>
+    expenses.filter(e => new Date(e.date + "T00:00:00").getMonth() === month),
+    [expenses, month]
+  );
+
   const totalExpenses = useMemo(() =>
     filtered.reduce((s, e) => s + e.amount, 0),
     [filtered]
   );
 
-  const balance     = income - totalExpenses;
-  const savingsRate = income > 0 ? (balance / income) * 100 : 0;
+  // Saldo e taxa baseados no mês selecionado
+  const balance     = monthlyIncome - totalExpenses;
+  const savingsRate = monthlyIncome > 0 ? (balance / monthlyIncome) * 100 : 0;
 
   const byCategory = useMemo(() => {
     const map: Record<string, number> = {};
@@ -132,12 +124,15 @@ export function useFinance(selectedMonth?: number) {
 
   const incomeVsExpenses = useMemo(() =>
     MONTHS.map((m, i) => {
-      const total = expenses
+      const gastos = expenses
         .filter(e => new Date(e.date + "T00:00:00").getMonth() === i)
         .reduce((s, e) => s + e.amount, 0);
-      return { month: m, gastos: total, renda: income, saldo: income - total };
+      const renda = incomeEntries
+        .filter(e => new Date(e.date + "T00:00:00").getMonth() === i)
+        .reduce((s, e) => s + e.amount, 0);
+      return { month: m, gastos, renda, saldo: renda - gastos };
     }),
-    [expenses, income]
+    [expenses, incomeEntries]
   );
 
   const budgetStatus = useMemo(() =>
@@ -173,10 +168,11 @@ export function useFinance(selectedMonth?: number) {
     setExpenses(prev => prev.map(e => e.id === updated.id ? updated : e));
   }, [setExpenses]);
 
-  const updateIncome = useCallback((updated: IncomeEntry, oldAmount: number) => {
+  // ✅ FIX 4: updateIncome não manipula mais income manualmente
+  //    — recalculado automaticamente pelo useMemo
+  const updateIncome = useCallback((updated: IncomeEntry, _oldAmount?: number) => {
     setIncomeEntries(prev => prev.map(e => e.id === updated.id ? updated : e));
-    setIncome(prev => prev - oldAmount + updated.amount);
-  }, [setIncomeEntries, setIncome]);
+  }, [setIncomeEntries]);
 
   const updateBudget = useCallback((category: string, limit: number) => {
     setBudgets(prev =>
@@ -198,7 +194,6 @@ export function useFinance(selectedMonth?: number) {
 
   const tip = getTip();
 
-  // Salva receita como lançamento individual E soma ao income total
   const addIncome = useCallback((
     amount: string,
     description: string = "Receita",
@@ -214,19 +209,19 @@ export function useFinance(selectedMonth?: number) {
       amount: value,
       date,
     }]);
-    setIncome(prev => prev + value);
     return true;
-  }, [setIncomeEntries, setIncome]);
+  }, [setIncomeEntries]);
 
-  const removeIncome = useCallback((id: number, amount: number) => {
+  // ✅ FIX 4: removeIncome não manipula mais income manualmente
+  const removeIncome = useCallback((id: number, _amount?: number) => {
     setIncomeEntries(prev => prev.filter(e => e.id !== id));
-    setIncome(prev => prev - amount);
-  }, [setIncomeEntries, setIncome]);
+  }, [setIncomeEntries]);
 
   return {
     expenses,
     income,
-    setIncome,
+    monthlyIncome,
+    setIncome: () => {}, // mantido para compatibilidade
     budgets,
     updateBudget,
     filtered,

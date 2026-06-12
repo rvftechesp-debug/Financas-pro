@@ -336,8 +336,11 @@ function AuthScreen({ onLogin }: { onLogin: (user: User) => void }) {
         </Card>
 
         <p className="text-center text-[#666] text-xs mt-6">
-          Seus dados ficam salvos apenas neste dispositivo
-        </p>
+             🔒 Seus dados ficam salvos apenas neste dispositivo.{" "}
+          <span className="text-yellow-600">
+          Não use senhas importantes aqui.
+          </span>
+          </p>
       </div>
     </div>
   );
@@ -436,38 +439,41 @@ function PerfilPanel({ user, onUpdate }: { user: User; onUpdate: (u: User) => vo
   const [photoPreview, setPhotoPreview] = useState<string>(user.photo || "");
   useEffect(() => { setPhotoPreview(user.photo || ""); }, [user.photo]);
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { setError("Arquivo muito grande (máximo 5MB)"); return; }
-    
-    try {
-      setError("");
-      // Compress image before storing
-      const compressedBase64 = await compressImage(file, {
-        maxWidth: 512,
-        maxHeight: 512,
-        quality: 0.75
-      });
-      
-      const originalSize = Math.ceil((file.size / 1024) * 100) / 100;
-      const compressedSize = formatFileSize(Math.ceil((compressedBase64.length * 3) / 4));
-      
-      setPhotoPreview(compressedBase64);
-      // Atualiza usuário com foto
-      const users = getUsers();
-      const updated = { ...user, photo: compressedBase64 };
-      const updatedUsers = users.map(u => u.id === user.id ? updated : u);
-      saveUsers(updatedUsers);
-      saveSession(updated);
-      setSuccess(`Foto atualizada com sucesso! (${originalSize}KB → ${compressedSize})`);
-      setTimeout(() => setSuccess(""), 3000);
-      if (typeof onUpdate === "function") onUpdate(updated);
-    } catch (err) {
-      setError("Erro ao processar imagem. Tente outra foto.");
-      console.error("Image compression error:", err);
-    }
-  };
+
+const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  if (file.size > 5 * 1024 * 1024) {
+    setError("Arquivo muito grande (máximo 5MB)");
+    return;
+  }
+
+  try {
+    setSuccess("Comprimindo imagem...");
+
+    const compressedBase64 = await compressImage(file, {
+      maxWidth: 512,
+      maxHeight: 512,
+      quality: 0.75,
+    });
+
+    setPhotoPreview(compressedBase64);
+
+    const users = getUsers();
+    const updatedUser = { ...user, photo: compressedBase64 };
+    saveUsers(users.map(u => u.id === user.id ? updatedUser : u));
+    saveSession(updatedUser);
+    onUpdate(updatedUser);  // ✅ usa onUpdate, que é o prop correto
+
+    setSuccess("Foto atualizada com sucesso!");
+    setTimeout(() => setSuccess(""), 3000);
+  } catch (err) {
+    console.error(err);
+    setError("Erro ao processar imagem. Tente outra foto.");
+  }
+};
+
 
   const handleEmailChange = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1249,7 +1255,7 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <StatCard
                 title="Renda"
-                value={formatBRL(finance.income)}
+                value={formatBRL(finance.monthlyIncome)}
                 color="#10B981"
                 icon={PiggyBank}
                 editable
@@ -1275,30 +1281,36 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
               />
             </div>
 
-            {editIncome && (
-              <Card className="bg-white/[0.03] border-white/[0.07]">
-                <CardContent className="p-4 flex items-center gap-3">
-                  <input
-                    className="bg-white/5 border border-white/10 rounded-lg text-[#f0f0f0] px-3 py-2 text-sm outline-none focus:border-orange-500 flex-1"
-                    type="number"
-                    value={tempIncome}
-                    onChange={e => setTempIncome(parseFloat(e.target.value) || 0)}
-                  />
-                  <button
-                    className="bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 rounded-lg px-4 py-2 text-sm font-semibold hover:bg-emerald-500/30 transition-all cursor-pointer"
-                    onClick={() => { finance.setIncome(tempIncome); setEditIncome(false); }}
-                  >
-                    <Check className="w-4 h-4" />
-                  </button>
-                  <button
-                    className="bg-white/5 text-[#888] border border-white/10 rounded-lg px-4 py-2 text-sm hover:bg-white/10 transition-all cursor-pointer"
-                    onClick={() => setEditIncome(false)}
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </CardContent>
-              </Card>
-            )}
+           {editIncome && (
+  <Card className="bg-white/[0.03] border-white/[0.07]">
+    <CardContent className="p-4 flex items-center gap-3">
+      <input
+        className="bg-white/5 border border-white/10 rounded-lg text-[#f0f0f0] px-3 py-2 text-sm outline-none focus:border-orange-500 flex-1"
+        type="number"
+        value={tempIncome}
+        onChange={e => setTempIncome(parseFloat(e.target.value) || 0)}
+        placeholder="Valor da renda"
+      />
+      <button
+        className="bg-emerald-500/20 text-emerald-500 border border-emerald-500/30 rounded-lg px-4 py-2 text-sm font-semibold hover:bg-emerald-500/30 transition-all cursor-pointer"
+        onClick={() => {
+          // Abre modal de receita em vez de setar renda diretamente
+          setModalAberto(true);
+          setEditIncome(false);
+        }}
+      >
+        <Check className="w-4 h-4" />
+      </button>
+      <button
+        className="bg-white/5 text-[#888] border border-white/10 rounded-lg px-4 py-2 text-sm hover:bg-white/10 transition-all cursor-pointer"
+        onClick={() => setEditIncome(false)}
+      >
+        <X className="w-4 h-4" />
+      </button>
+    </CardContent>
+  </Card>
+)}
+
 
             <Card className="bg-white/[0.03] border-white/[0.07]">
               <CardContent className="p-4 sm:p-5">
@@ -1837,7 +1849,7 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
                                   <option value="outro" className="bg-[#1a1a2e]">💡 Outro</option>
                                 </select>
                                 <button
-                                  onClick={() => { finance.updateIncome(editingIncome, e.amount); setEditingIncome(null); }}
+                                  onClick={() => { finance.updateIncome(editingIncome); setEditingIncome(null); }}
                                   className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-lg py-1.5 text-xs font-bold flex items-center justify-center gap-1 cursor-pointer hover:bg-emerald-500/30 transition-all"
                                 >
                                   <Check className="w-3 h-3" /> Salvar
@@ -1879,7 +1891,7 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
                                   <Pencil className="w-4 h-4" />
                                 </button>
                                 <button
-                                  onClick={() => finance.removeIncome(e.id, e.amount)}
+                                  onClick={() => finance.removeIncome(e.id)}
                                   className="bg-transparent border-none text-white/20 hover:text-red-400 cursor-pointer p-1.5 rounded-lg hover:bg-red-500/10 transition-all"
                                 >
                                   <Trash2 className="w-4 h-4" />

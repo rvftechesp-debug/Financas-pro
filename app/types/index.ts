@@ -4,6 +4,11 @@ export interface Expense {
   category: string;
   amount: number;
   date: string;
+  attachment?: string;
+  attachmentName?: string;
+  cardName?: string;
+  installments?: number;
+  installmentNumber?: number;
 }
 
 export interface Income {
@@ -33,8 +38,8 @@ export interface Investment {
   id: number;
   name: string;
   type: string;
-  amount: number;       // valor investido (aporte total)
-  currentValue: number; // valor atual de mercado
+  amount: number;
+  currentValue: number;
   date: string;
 }
 
