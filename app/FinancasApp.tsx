@@ -11,7 +11,7 @@ import {
   Receipt, CalendarDays, ChevronRight, AlertTriangle, CheckCircle2,
   PiggyBank, LogIn, UserPlus, LogOut, Eye, EyeOff, Lock, User, Mail,
   PlusCircle, DollarSign, Settings, KeyRound, ShieldCheck, TrendingUpIcon, Zap, Loader,
-  FileText, Printer
+  FileText, Printer, Paperclip
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -726,6 +726,54 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
   const [dataReceita, setDataReceita] = useState(() => new Date().toISOString().split("T")[0]);
   const [editingExpense, setEditingExpense] = useState<import("@/app/types").Expense | null>(null);
   const [editingIncome, setEditingIncome] = useState<import("../hooks/useFinance").IncomeEntry | null>(null);
+  const [attachTarget, setAttachTarget] = useState<{ type: "expense" | "income"; id: number } | null>(null);
+  const [attachLoading, setAttachLoading] = useState(false);
+  const attachInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleAttachClick = (type: "expense" | "income", id: number, existingAttachment?: string) => {
+    if (existingAttachment) {
+      window.open(existingAttachment, "_blank");
+      return;
+    }
+    setAttachTarget({ type, id });
+    attachInputRef.current?.click();
+  };
+
+  const handleAttachFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const target = attachTarget;
+    e.target.value = "";
+    if (!file || !target) return;
+    if (file.size > 5 * 1024 * 1024) { alert("Arquivo muito grande (máximo 5MB)"); return; }
+
+    setAttachLoading(true);
+    try {
+      let dataUrl: string;
+      if (file.type.startsWith("image/")) {
+        dataUrl = await compressImage(file, { maxWidth: 1200, maxHeight: 1200, quality: 0.7 });
+      } else {
+        dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      if (target.type === "expense") {
+        const exp = finance.expenses.find(x => x.id === target.id);
+        if (exp) finance.updateExpense({ ...exp, attachment: dataUrl, attachmentName: file.name } as Expense);
+      } else {
+        const inc = finance.incomeEntries.find(x => x.id === target.id);
+        if (inc) finance.updateIncome({ ...inc, attachment: dataUrl, attachmentName: file.name }, inc.amount);
+      }
+    } catch {
+      alert("Erro ao processar o arquivo.");
+    } finally {
+      setAttachLoading(false);
+      setAttachTarget(null);
+    }
+  };
   
   // Estados para investimentos
   const [investmentValue, setInvestmentValue] = useState("");
@@ -1727,6 +1775,17 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
                                   {formatBRL(e.amount)}
                                 </span>
                                 <button
+                                  onClick={() => handleAttachClick("expense", e.id, (e as Expense & { attachment?: string }).attachment)}
+                                  title={(e as Expense & { attachment?: string }).attachment ? "Ver comprovante" : "Anexar comprovante"}
+                                  className={`bg-transparent border-none cursor-pointer p-1.5 rounded-lg transition-all ${
+                                    (e as Expense & { attachment?: string }).attachment
+                                      ? "text-emerald-400 hover:bg-emerald-500/10"
+                                      : "text-white/20 hover:text-blue-400 hover:bg-blue-500/10"
+                                  }`}
+                                >
+                                  <Paperclip className="w-4 h-4" />
+                                </button>
+                                <button
                                   onClick={() => setEditingExpense(e)}
                                   className="bg-transparent border-none text-white/20 hover:text-orange-400 cursor-pointer p-1.5 rounded-lg hover:bg-orange-500/10 transition-all"
                                 >
@@ -1802,6 +1861,17 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
                                 <span className="font-bold text-sm whitespace-nowrap text-emerald-400">
                                   +{formatBRL(e.amount)}
                                 </span>
+                                <button
+                                  onClick={() => handleAttachClick("income", e.id, e.attachment)}
+                                  title={e.attachment ? "Ver comprovante" : "Anexar comprovante"}
+                                  className={`bg-transparent border-none cursor-pointer p-1.5 rounded-lg transition-all ${
+                                    e.attachment
+                                      ? "text-emerald-400 hover:bg-emerald-500/10"
+                                      : "text-white/20 hover:text-blue-400 hover:bg-blue-500/10"
+                                  }`}
+                                >
+                                  <Paperclip className="w-4 h-4" />
+                                </button>
                                 <button
                                   onClick={() => setEditingIncome(e)}
                                   className="bg-transparent border-none text-white/20 hover:text-orange-400 cursor-pointer p-1.5 rounded-lg hover:bg-orange-500/10 transition-all"
@@ -2311,6 +2381,23 @@ function DashboardScreen({ user, onLogout, setCurrentUser }: DashboardScreenProp
                 </button>
               </CardContent>
             </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Input escondido para anexar comprovantes */}
+      <input
+        type="file"
+        ref={attachInputRef}
+        onChange={handleAttachFileChange}
+        accept="image/*,application/pdf"
+        className="hidden"
+      />
+      {attachLoading && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60]">
+          <div className="bg-white/[0.05] border border-white/10 rounded-xl px-6 py-4 flex items-center gap-3 text-sm text-[#ccc]">
+            <Loader className="w-4 h-4 animate-spin" />
+            Enviando anexo...
           </div>
         </div>
       )}

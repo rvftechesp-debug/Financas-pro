@@ -24,6 +24,8 @@ export interface IncomeEntry {
   type: string;
   amount: number;
   date: string;
+  attachment?: string;
+  attachmentName?: string;
 }
 
 const defaultBudgets: Budget[] = CATEGORIES.map(c => ({
